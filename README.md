@@ -1,0 +1,3 @@
+simple OpenGL 4 program which displays a rectangle made of two different coloured triangles
+
+I have included all the necessariby include and lib files here because that's how i'm running it locally and I should probably remove them but...
