@@ -18,8 +18,8 @@ all : program versionfile message
 # @ hides commands in terminal
 # git describe gets version number, --dirty adds -dirty to version number if changes have been made since last commit and tag
 versionfile:
-	@echo:#define VERSION "$(shell git describe --dirty)"> version.h
+	@echo:#define VERSION "$(shell git describe --dirty --tags)"> version.h
 program:
 	@$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
 message:
-	@echo:Don't forget to commit and tag. Latest commit was ${shell git describe}.
+	@echo:Don't forget to commit and tag. Latest commit was ${shell git describe --tags}.
