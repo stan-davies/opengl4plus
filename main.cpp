@@ -6,14 +6,64 @@
 #define GLFW_DLL
 #include <GLFW/glfw3.h>
 
+#include "version.h"
+#include "log.h"
+
+int width = 640;
+int height = 480;
+
+static double previous_seconds;
+
+void _update_fps_counter(GLFWwindow* window) {
+    static int frame_count;
+    double current_seconds = glfwGetTime();
+    double elapsed_seconds = current_seconds - previous_seconds;
+    if (elapsed_seconds > 0.25) {
+        previous_seconds = current_seconds;
+        double fps = (double)frame_count / elapsed_seconds;
+        char tmp[128];
+        sprintf(tmp, "opengl @ fps: %.2f", fps);
+        glfwSetWindowTitle(window, tmp);
+        frame_count = 0;
+    }
+    frame_count++;
+}
+
+void glfw_window_size_callback(GLFWwindow* window, int w, int h) {
+    width = w;
+    height = h;
+
+    // update perspective matrices
+}
+
+void glfw_error_callback(int error, const char* description) {
+    log_err("GLFW ERROR: code %i msg: %s\n", error, description);
+}
+
 int main() {
+    restart_log();
+
+    log("starting GLFW with version: %s\n", glfwGetVersionString());
+
+    glfwSetErrorCallback(glfw_error_callback);
+
     // start GL context using GLFW helper
     if (!glfwInit()) {
         std::cerr << "ERROR: could not start GLFW" << std::endl;
         return 1;
     }
 
-    GLFWwindow* window = glfwCreateWindow(640, 480, "Hello Traingle", NULL, NULL);
+    // put any window hints here
+    // this one sets anti-aliasing passes to 4
+    // 16 is a good level for screenshots
+    glfwWindowHint(GLFW_SAMPLES, 4);
+
+    // # set the window to fill the main monitor
+    // GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    // const GLFWvidmode* video_mode = glfwGetVideoMode(monitor);
+    // GLFWwindow* window = glfwCreateWindow(video_mode->width, video_mode->height, "Extended Init", monitor, NULL);
+    // # set the window to be a little window
+    GLFWwindow* window = glfwCreateWindow(width, height, "Extended Init", NULL, NULL);
 
     if (NULL == window) {
         std::cerr << "ERROR: could not create window with GLFW" << std::endl;
@@ -22,10 +72,22 @@ int main() {
     }
 
     glfwMakeContextCurrent(window);
+    
+    glfwSetWindowSizeCallback(window, glfw_window_size_callback);
 
     // start GLEW, experimental encourages it to use newer (4.* +) versions of OpenGL
     glewExperimental = GL_TRUE;
     glewInit();
+
+    const GLubyte* renderer = glGetString(GL_RENDERER); // get renderer string
+    const GLubyte* version = glGetString(GL_VERSION); // version as a string
+    log("renderer: %s\nOpenGL version supported: %s\n", renderer, version);
+    delete renderer;
+    delete version;
+    renderer = nullptr;
+    version = nullptr;
+
+    log_gl_params();
 
     // only draw onto a pixel if the shape is closer to the viewer
     glEnable(GL_DEPTH_TEST); // enable depth testing
@@ -131,10 +193,11 @@ int main() {
     glAttachShader(other_shader_program, ofs);
     glLinkProgram(other_shader_program);
 
-
     // main running loop
     while(!glfwWindowShouldClose(window)) {
+        _update_fps_counter(window);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, width, height);
     
         glUseProgram(shader_program);
 
@@ -149,9 +212,12 @@ int main() {
 
         glDrawArrays(GL_TRIANGLE_FAN, 0, vertices);
 
+        glfwSwapBuffers(window);
         glfwPollEvents();
 
-        glfwSwapBuffers(window);
+        if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+            glfwSetWindowShouldClose(window, 1);
+        }
     }
 
     glfwTerminate();
