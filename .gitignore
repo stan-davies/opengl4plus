@@ -1,3 +1,4 @@
 .vscode/
 program.exe
 gl.log
+version.h

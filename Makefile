@@ -14,7 +14,7 @@ LINKER_FLAGS = -lmingw32 -lopengl32 -lglew32 -lglfw3
 
 OBJ_NAME = program
 
-all : program versionfile message
+all : versionfile program message
 # @ hides commands in terminal
 # git describe gets version number, --dirty adds -dirty to version number if changes have been made since last commit and tag
 versionfile:
