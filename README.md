@@ -1,3 +1,5 @@
 simple OpenGL 4 program which displays a rectangle made of two different coloured triangles
 
 I have included all the necessariby include and lib files here because that's how i'm running it locally and I should probably remove them but...
+
+I also set up a kinda fruity version tracking thing, which uses tags for each commit and then in the Makefile, then the one for the latest commit is put into a macro so that it can get put into the log. Now, as tags are set after you do a commit, the most up to date tag will **not** be in the code that you just committed, you have to recompile to get that tag. However, I feel this kind of makes sense for this whole git thing, as if you were to clone the code and build it locally, you then **would** have the most up to date tag, and if I were to make any changes to what I have on my machine, then when I compile again, I am looking at this new version tag, so all is well? I sure hope it is!
