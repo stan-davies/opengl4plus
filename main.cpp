@@ -6,7 +6,6 @@
 #define GLFW_DLL
 #include <GLFW/glfw3.h>
 
-#include "version.h"
 #include "log.h"
 
 int width = 640;
@@ -33,18 +32,20 @@ void glfw_window_size_callback(GLFWwindow* window, int w, int h) {
     width = w;
     height = h;
 
-    // update perspective matrices
+    // update perspective matrices here
 }
 
 void glfw_error_callback(int error, const char* description) {
-    log_err("GLFW ERROR: code %i msg: %s\n", error, description);
+    log_err("GLFW ERROR: code ", error, " msg: ", description);
 }
 
 int main() {
+    // get that long file a'rollin
     restart_log();
 
-    log("starting GLFW with version: %s\n", glfwGetVersionString());
+    log("starting GLFW with version: ", glfwGetVersionString());
 
+    // tell GLFW how to log errors
     glfwSetErrorCallback(glfw_error_callback);
 
     // start GL context using GLFW helper
@@ -73,24 +74,25 @@ int main() {
 
     glfwMakeContextCurrent(window);
     
+    // tell GLFW what to do when the window is resized
     glfwSetWindowSizeCallback(window, glfw_window_size_callback);
 
     // start GLEW, experimental encourages it to use newer (4.* +) versions of OpenGL
     glewExperimental = GL_TRUE;
     glewInit();
 
-    const GLubyte* renderer = glGetString(GL_RENDERER); // get renderer string
-    const GLubyte* version = glGetString(GL_VERSION); // version as a string
-    log("renderer: %s\nOpenGL version supported: %s\n", renderer, version);
+    // some key data for the log
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    const GLubyte* version = glGetString(GL_VERSION);
+    log("renderer: ", renderer, "\nOpenGL version supported: ", version);
+    log_gl_params();
     delete renderer;
     delete version;
     renderer = nullptr;
     version = nullptr;
 
-    log_gl_params();
-
     // only draw onto a pixel if the shape is closer to the viewer
-    glEnable(GL_DEPTH_TEST); // enable depth testing
+    glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);    // depth-testing interpretes a smaller value as "closer"
 
     float points[] = {
@@ -144,7 +146,7 @@ int main() {
     std::string vertexString;
     std::ifstream vertexSource("shaders/vertex.glsl");
     if (!vertexSource) {
-        std::cerr << "ERROR: file could not be loaded" << std::endl;
+        log_err("ERROR: vertex shader 1 could not be loaded");
         return 1;
     }
     vertexString.assign((std::istreambuf_iterator<char>(vertexSource)), std::istreambuf_iterator<char>());
@@ -158,7 +160,7 @@ int main() {
     std::string fragment_string;
     std::ifstream fragment_source("shaders/fragment.glsl");
     if (!fragment_source) {
-        std::cerr << "ERROR: file could not be loaded" << std::endl;
+        log_err("ERROR: vertex shader 2 could not be loaded");
         return 1;
     }
     fragment_string.assign((std::istreambuf_iterator<char>(fragment_source)), std::istreambuf_iterator<char>());
@@ -172,7 +174,7 @@ int main() {
     std::string other_fragment_string;
     std::ifstream other_fragment_source("shaders/other_fragment.glsl");
     if (!other_fragment_source) {
-        std::cerr << "ERROR: file could not be loaded" << std::endl;
+        log_err("ERROR: fragment shader could not be loaded");
         return 1;
     }
     other_fragment_string.assign((std::istreambuf_iterator<char>(other_fragment_source)), std::istreambuf_iterator<char>());

@@ -3,55 +3,69 @@
 
 #include <time.h>
 #include <stdarg.h>
+#include <fstream>
+#include "version.h"
 
 #define GL_LOG_FILE "gl.log"
 
 bool restart_log() {
-    FILE* file = fopen(GL_LOG_FILE, "w");
+    // open file for writing
+    std::fstream file;
+    file.open(GL_LOG_FILE, std::fstream::out);
+
     if (!file) {
-        fprintf(stderr, "ERROR: could not open log file for writing\n");
+        std::cerr << "ERROR: could not open log file for writing" << std::endl;
         return false;
     }
 
     time_t now = time(NULL);
     char* date = ctime(&now);
-    // for some reason the date has a \n on the end of it
-    fprintf(file, "GL_LOG_FILE log\nlocal time: %sversion: %s\n", date, VERSION);
-    fclose(file);
+    // for some reason the date has a \n on the end of it so don't worry about that
+    file << "GL_LOG_FILE log\nlocal time: " << date << "version: " << VERSION << std::endl;
+    file.close();
     return true;
 }
 
-bool log(const char* message, ...) {
-    va_list argptr;
+// ummmm find out how this works lol
+template<class... Args>
+bool log(Args... args) {
     // append mode
-    FILE* file = fopen(GL_LOG_FILE, "a");
+    std::fstream file;
+    file.open(GL_LOG_FILE, std::fstream::app);
+
     if (!file) {
-        fprintf(stderr, "ERROR: could not open GL_LOG_FILE for appending\n");
+        std::cerr << "ERROR: could not open GL_LOG_FILE for appending" << std::endl;
         return false;
     }
-    va_start(argptr, message);
-    vfprintf(file, message, argptr);
-    va_end(argptr);
-    fclose(file);
+
+    // log variable amount of stuff
+    (file << ... << args);
+    file << std::endl;
+
+    file.close();
+
     return true;
 }
 
-bool log_err(const char* message, ...) {
-    va_list argptr;
-    FILE* file = fopen(GL_LOG_FILE, "a");
+template<class... Args>
+bool log_err(Args... args) {
+    // open file for appending
+    std::fstream file;
+    file.open(GL_LOG_FILE, std::fstream::app);
+
     if (!file) {
-        fprintf(stderr, "ERROR: could not open GL_LOG_FILE for appending\n");
+        std::cerr << "ERROR: could not open GL_LOG_FILE for appending" << std::endl;
         return false;
     }
-    va_start(argptr, message);
-    vfprintf(file, message, argptr);
-    va_end(argptr);
 
-    va_start(argptr, message);
-    vfprintf(stderr, message, argptr);
-    va_end(argptr);
+    // log variable amount of stuff
+    (file << ... << args);
+    file << std::endl;
 
-    fclose(file);
+    // directly output it too because it's an error and we want to know about it!
+    std::cerr << "ERROR: see logs for more information" << std::endl;
+
+    file.close();
     return true;
 }
 
@@ -86,24 +100,24 @@ void log_gl_params() {
         "GL_STEREO"
     };
 
-    log("GL context parameters:\n");
+    log("GL context parameters:");
     // integers - only works if the order is 0-10 integer return types
     for (int i = 0; i < 10; ++i) {
         int v = 0;
         glGetIntegerv(params[i], &v);
-        log("%s %i\n", names[i], v);
+        log(names[i], " ", v);
     }
 
     // the others
     int v[2];
     v[0] = v[1] = 0;
     glGetIntegerv(params[10], v);
-    log("%s %i %i\n", names[10], v[0], v[1]);
+    log(names[10], " ", v[0], " ", v[1]);
 
     unsigned char s = 0;
     glGetBooleanv(params[11], &s);
-    log("%s %u\n", names[11], (unsigned int)s);
-    log("---------------------------------------\n");
+    log(names[11], " ", (unsigned int)s);
+    log("---------------------------------------");
 }
 
 #endif
