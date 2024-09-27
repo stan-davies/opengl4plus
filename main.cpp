@@ -144,7 +144,7 @@ int main() {
 
     // load and attach vertex shader
     std::string vertexString;
-    std::ifstream vertexSource("shaders/vertex.glsl");
+    std::ifstream vertexSource("shaders/triangle.vert");
     if (!vertexSource) {
         log_err("ERROR: vertex shader 1 could not be loaded");
         return 1;
@@ -158,7 +158,7 @@ int main() {
 
     // load and attach fragment shader
     std::string fragment_string;
-    std::ifstream fragment_source("shaders/fragment.glsl");
+    std::ifstream fragment_source("shaders/cyan.frag");
     if (!fragment_source) {
         log_err("ERROR: vertex shader 2 could not be loaded");
         return 1;
@@ -172,7 +172,7 @@ int main() {
 
     // load and attach other fragment shader
     std::string other_fragment_string;
-    std::ifstream other_fragment_source("shaders/other_fragment.glsl");
+    std::ifstream other_fragment_source("shaders/magenta.frag");
     if (!other_fragment_source) {
         log_err("ERROR: fragment shader could not be loaded");
         return 1;
