@@ -101,12 +101,6 @@ int main() {
          0.5f, -0.5f, 0.f   // bottom right
     };
 
-    float other_points[] = {
-         0.5f, -0.5f, 0.f,  // bottom right
-        -0.5f, -0.5f, 0.f,  // bottom left
-        -0.5f,  0.5f, 0.f   // top left
-    };
-
     const int vertices = 3;
     const int dimension = 3;
 
@@ -115,12 +109,6 @@ int main() {
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, vertices * dimension * sizeof(float), points, GL_STATIC_DRAW);
-
-    // create VBO and give it data
-    GLuint other_VBO = 0;
-    glGenBuffers(1, &other_VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, other_VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices * dimension * sizeof(float), other_points, GL_STATIC_DRAW);
 
     // create VAO
     GLuint VAO = 0;
@@ -132,19 +120,9 @@ int main() {
     // defines layout of attribute 0
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
-    // create VAO
-    GLuint other_VAO = 0;
-    glGenVertexArrays(1, &other_VAO);
-    glBindVertexArray(other_VAO);
-    // enable first attribute, we only have one vertex buffer so we know that it is the start
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, other_VBO);
-    // defines layout of attribute 0
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-
     // load and attach vertex shader
     std::string vertexString;
-    std::ifstream vertexSource("shaders/triangle.vert");
+    std::ifstream vertexSource("shaders/default.vert");
     if (!vertexSource) {
         log_err("ERROR: vertex shader 1 could not be loaded");
         return 1;
@@ -158,7 +136,7 @@ int main() {
 
     // load and attach fragment shader
     std::string fragment_string;
-    std::ifstream fragment_source("shaders/cyan.frag");
+    std::ifstream fragment_source("shaders/default.frag");
     if (!fragment_source) {
         log_err("ERROR: vertex shader 2 could not be loaded");
         return 1;
@@ -170,30 +148,13 @@ int main() {
     glShaderSource(fs, 1, &fragment_shader, NULL);
     glCompileShader(fs);
 
-    // load and attach other fragment shader
-    std::string other_fragment_string;
-    std::ifstream other_fragment_source("shaders/magenta.frag");
-    if (!other_fragment_source) {
-        log_err("ERROR: fragment shader could not be loaded");
-        return 1;
-    }
-    other_fragment_string.assign((std::istreambuf_iterator<char>(other_fragment_source)), std::istreambuf_iterator<char>());
-    const char* other_fragment_shader = other_fragment_string.c_str();
-
-    GLuint ofs = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(ofs, 1, &other_fragment_shader, NULL);
-    glCompileShader(ofs);
-
     // create and link shader program
     GLuint shader_program = glCreateProgram();
     glAttachShader(shader_program, fs);
     glAttachShader(shader_program, vs);
     glLinkProgram(shader_program);
 
-    GLuint other_shader_program = glCreateProgram();
-    glAttachShader(other_shader_program, vs);
-    glAttachShader(other_shader_program, ofs);
-    glLinkProgram(other_shader_program);
+    GLint input_colour_loc = glGetUniformLocation(shader_program, "input_colour");
 
     // main running loop
     while(!glfwWindowShouldClose(window)) {
@@ -203,15 +164,11 @@ int main() {
     
         glUseProgram(shader_program);
 
+        glUniform4f(input_colour_loc, 1.f, 0.f, 0.f, 1.f);
+
         glBindVertexArray(VAO);
 
         // draw points 0-4 from currently bound VAO with currently in-use shader
-        glDrawArrays(GL_TRIANGLE_FAN, 0, vertices);
-
-        glUseProgram(other_shader_program);
-
-        glBindVertexArray(other_VAO);
-
         glDrawArrays(GL_TRIANGLE_FAN, 0, vertices);
 
         glfwSwapBuffers(window);
