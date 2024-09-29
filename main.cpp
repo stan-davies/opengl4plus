@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <chrono>
 
 #include <GL/glew.h>
 #define GLFW_DLL
@@ -153,9 +154,22 @@ int main() {
         GLuint program_id;
         load_program("shaders/default.vert", "shaders/default.frag", &program_id);
 
+        GLuint time_ptr = glGetUniformLocation(program_id, "time");
+        if (-1 == time_ptr) {
+                log_err("ERROR: could not find location for uniform 'time'");
+                return false;
+        }
+
         glEnable(GL_CULL_FACE); // cull face
         glCullFace(GL_BACK);    // cull back fice
         glFrontFace(GL_CW);     // go clockwise
+
+        typedef std::chrono::high_resolution_clock time;
+        typedef std::chrono::milliseconds ms;
+        typedef std::chrono::duration<float> fsec;
+        auto start = time::now();
+
+        float theta = 0.f;
 
         // main running loop
         while(!glfwWindowShouldClose(window)) {
@@ -166,6 +180,15 @@ int main() {
                 glViewport(0, 0, width, height);
 
                 glUseProgram(program_id);
+
+                fsec elapsed = time::now() - start;
+                ms d = std::chrono::duration_cast<ms>(elapsed);
+                if (d.count() > 50) {
+                        log("update");
+                        theta += 0.05f;
+                        start = time::now();
+                        glUniform1f(time_ptr, theta);
+                }
 
                 glBindVertexArray(VAO);
 
