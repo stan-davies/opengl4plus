@@ -3,3 +3,6 @@ include/
 program.exe
 gl.log
 version.h
+glew32.lib
+glfw3.dll
+libglfw3.a
