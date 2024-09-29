@@ -59,4 +59,58 @@ bool create_shader(GLenum type, const char *path, GLuint *shader_id) {
         return true;
 }
 
+bool create_program(GLuint vertex_id, GLuint fragment_id, GLuint *_program_id) {
+        GLuint program_id = glCreateProgram();
+        glAttachShader(program_id, vertex_id);
+        glAttachShader(program_id, fragment_id);
+        glLinkProgram(program_id);
+
+        // check if link worked
+        int link_status = -1;
+        glGetProgramiv(program_id, GL_LINK_STATUS, &link_status);
+        log("program ", program_id, " GL_LINK_STATUS = ", link_status);
+        if (GL_TRUE != link_status) {
+                log_err("ERROR: could not link shader program (id: ", program_id, ")");
+                log_program_logs(program_id);
+                return false;
+        }
+
+        // check if program is valid
+        glValidateProgram(program_id);
+        int valid = -1;
+        glGetProgramiv(program_id, GL_VALIDATE_STATUS, &valid);
+        log("program ", program_id, " GL_VALIDATE_STATUS = ", valid);
+        if (GL_TRUE != valid) {
+                log_err("ERROR: program ", program_id, " is not valid");
+                log_program_logs(program_id);
+                return false;
+        }
+
+        *_program_id = program_id;
+        return true;
+} 
+
+bool load_program(const char *vertex_path, const char *fragment_path, GLuint *_program_id) {
+        GLuint v_id;
+        if (!create_shader(GL_VERTEX_SHADER, vertex_path, &v_id)) {
+                log_err("ERROR: vertex shader creation failed");
+                return false;
+        }
+
+        GLuint f_id;
+        if (!create_shader(GL_FRAGMENT_SHADER, fragment_path, &f_id)) {
+                log_err("ERROR: fragment shader creation failed");
+                return false;
+        }
+
+        GLuint program_id;
+        if (!create_program(v_id, f_id, &program_id)) {
+                log_err("ERROR: shader program creation failed");
+                return false;
+        }
+
+        *_program_id = program_id;
+        return true;
+}
+
 #endif
