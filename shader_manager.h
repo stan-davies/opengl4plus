@@ -1,31 +1,49 @@
 #ifndef SHADER_MANAGER_H
 #define SHADER_MANAGER_H
 
-#include <string>
-#include <GL/glew.h>
-#include <fstream>
-#include "log.h"
+// 1028 * 256 = 262144
+#define MAX_SHADER_LENGTH 262144
 
-bool create_shader(GLenum type, std::string path, GLuint *shader_id) {
-        log("shader");
-        // open file and get ALL contents
-        std::string shader_string;
-        std::ifstream shader_source(path);
-        if (!shader_source) {
-                log_err("ERROR: shader at '", path, "' could not be loaded");
+bool parse_file(const char *path, char *string, int max_len) {
+        FILE *file = fopen(path, "r");
+        if (!file) {
                 return false;
         }
 
-        shader_string.assign((std::istreambuf_iterator<char>(shader_source)), std::istreambuf_iterator<char>());
-        const char *shader_c_str = shader_string.c_str();
+        size_t cnt_len = fread(string, 1, max_len - 1, file);
+        if ((int)cnt_len >= max_len - 1) {
+                log_err("WARNING: file at '", path, "' is too long, will be truncated");
+        }
+
+        if (ferror(file)) {
+                log_err("ERROR: reading file at '", path, "'");
+                return false;
+        }
+
+        // append \0 to end of file string
+        string[cnt_len] = 0;
+        fclose(file);
+        return true;
+}
+
+bool create_shader(GLenum type, const char *path, GLuint *shader_id) {
+        // open file and get ALL contents
+        char shader_string[MAX_SHADER_LENGTH];
+        bool success = parse_file(path, shader_string, MAX_SHADER_LENGTH);
+        if (!success) {
+                log_err("ERROR: could not open file at '", path, "'");
+                return false;
+        }
+
+        const GLchar *gl_string = (const GLchar *)shader_string;
 
         // create and compile shader
         GLuint id = glCreateShader(type);
-        glShaderSource(id, 1, &shader_c_str, NULL);
+        glShaderSource(id, 1, &gl_string, NULL);
         glCompileShader(id);
 
-        delete[](shader_c_str);
-        shader_c_str = nullptr;
+        delete[](gl_string);
+        gl_string = nullptr;
 
         // check compile success
         int sh_cmp_stat = -1;

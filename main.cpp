@@ -13,10 +13,21 @@
 int width = 640;
 int height = 480;
 
-static double previous_seconds;
-
-// determines the current fps and inserts it into the window name
-void update_fps_counter(GLFWwindow *window);
+void update_fps_counter( GLFWwindow* window ) {
+        static double previous_seconds = glfwGetTime();
+        static int frame_count;
+        double current_seconds = glfwGetTime();
+        double elapsed_seconds = current_seconds - previous_seconds;
+        if ( elapsed_seconds > 0.25 ) {
+                previous_seconds = current_seconds;
+                double fps = (double)frame_count / elapsed_seconds;
+                char tmp[128];
+                sprintf( tmp, "opengl @ fps: %.2f", fps );
+                glfwSetWindowTitle( window, tmp );
+                frame_count = 0;
+        }
+        frame_count++;
+}
 
 // updates window size data
 void glfw_window_size_callback(GLFWwindow *window, int w, int h);
@@ -26,22 +37,6 @@ void glfw_error_callback(int error, const char* description);
 
 // checks if a program is valid
 bool is_valid(GLuint program_id);
-
-
-void update_fps_counter(GLFWwindow *window) {
-        static int frame_count;
-        double current_seconds = glfwGetTime();
-        double elapsed_seconds = current_seconds - previous_seconds;
-        if (elapsed_seconds > 0.25) {
-                previous_seconds = current_seconds;
-                double fps = (double)frame_count / elapsed_seconds;
-                char tmp[128];
-                sprintf(tmp, "opengl @ fps: %.2f", fps);
-                glfwSetWindowTitle(window, tmp);
-                frame_count = 0;
-        }
-        frame_count++;
-}
 
 void glfw_window_size_callback(GLFWwindow *window, int w, int h) {
         width = w;
@@ -78,24 +73,23 @@ int main() {
 
         // start GL context using GLFW helper
         if (!glfwInit()) {
-                std::cerr << "ERROR: could not start GLFW" << std::endl;
+                log_err("ERROR: could not start GLFW");
                 return 1;
         }
 
         // put any window hints here
+        glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
+        glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 1 );
+        glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
+        glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
         // this one sets anti-aliasing passes to 4
         // 16 is a good level for screenshots
-        glfwWindowHint(GLFW_SAMPLES, 4);
+        glfwWindowHint( GLFW_SAMPLES, 4 );
 
-        // # set the window to fill the main monitor
-        // GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-        // const GLFWvidmode* video_mode = glfwGetVideoMode(monitor);
-        // GLFWwindow* window = glfwCreateWindow(video_mode->width, video_mode->height, "Extended Init", monitor, NULL);
-        // # set the window to be a little window
-        GLFWwindow *window = glfwCreateWindow(width, height, "Extended Init", NULL, NULL);
+        GLFWwindow *window = glfwCreateWindow(width, height, "VAO VBO", NULL, NULL);
 
         if (NULL == window) {
-                std::cerr << "ERROR: could not create window with GLFW" << std::endl;
+                log_err("ERROR: could not create window with GLFW");
                 glfwTerminate();
                 return 1;
         }
@@ -103,7 +97,7 @@ int main() {
         glfwMakeContextCurrent(window);
         
         // tell GLFW what to do when the window is resized
-        glfwSetWindowSizeCallback(window, glfw_window_size_callback);
+        glfwSetFramebufferSizeCallback(window, glfw_window_size_callback);
 
         // start GLEW, experimental encourages it to use newer (4.* +) versions of OpenGL
         glewExperimental = GL_TRUE;
@@ -113,51 +107,79 @@ int main() {
         const GLubyte *renderer = glGetString(GL_RENDERER);
         const GLubyte *version = glGetString(GL_VERSION);
         log("renderer: ", renderer, "\nOpenGL version supported: ", version);
-        log_gl_params();
         delete renderer;
         delete version;
         renderer = nullptr;
         version = nullptr;
 
+        log("-------------");
+
         // only draw onto a pixel if the shape is closer to the viewer
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);    // depth-testing interpretes a smaller value as "closer"
 
+
+        // DATA TIME!!!
         float points[] = {
-                -0.5f,  0.5f, 0.f,  // top left
-                0.5f,  0.5f, 0.f,  // top right
-                0.5f, -0.5f, 0.f   // bottom right
+                 0.f,   0.5f, 0.f,  // top middle
+                 0.5f, -0.5f, 0.f,  // bottom right
+                -0.5f, -0.5f, 0.f   // bottom left
+        };
+
+        float colours[] = {
+                1.f, 0.f, 0.f,
+                0.f, 1.f, 0.f,
+                0.f, 0.f, 1.f
         };
 
         const int vertices = 3;
         const int dimension = 3;
 
         // create VBO and give it data
-        GLuint VBO = 0;
-        glGenBuffers(1, &VBO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        GLuint VBO_p = 0;
+        glGenBuffers(1, &VBO_p);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_p);
         glBufferData(GL_ARRAY_BUFFER, vertices * dimension * sizeof(float), points, GL_STATIC_DRAW);
+
+        GLuint VBO_c = 0;
+        glGenBuffers(1, &VBO_c);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_c);
+        glBufferData(GL_ARRAY_BUFFER, vertices * dimension * sizeof(float), colours, GL_STATIC_DRAW);
 
         // create VAO
         GLuint VAO = 0;
         glGenVertexArrays(1, &VAO);
         glBindVertexArray(VAO);
-        // enable first attribute, we only have one vertex buffer so we know that it is the start
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        // defines layout of attribute 0
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_p);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_c);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+        // for some reason, buffers are disabled by default, so enable them!
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+
+
+        // PROGRAM TIME!!
+        bool success;
 
         GLuint vs_id = 0;
-        if (!create_shader(GL_VERTEX_SHADER, "shaders/default.vert", &vs_id)) {
+        success = create_shader(GL_VERTEX_SHADER, "shaders/default.vert", &vs_id);
+        if (!success || 0 == vs_id) {
+                log_err("ERROR: vertex shader creation failed");
                 return false;
         }
 
         GLuint fs_id = 0;
-        if (!create_shader(GL_FRAGMENT_SHADER, "shaders/default.frag", &fs_id)) {
+        success = create_shader(GL_FRAGMENT_SHADER, "shaders/default.frag", &fs_id);
+        if (!success || 0 == fs_id) {
+                log_err("ERROR: fragment shader creation failed");
                 return false;
         }
+
+        log("vs: ", vs_id, " fs: ", fs_id);
 
         // create and link shader program
         GLuint shader_program_id = glCreateProgram();
@@ -167,6 +189,7 @@ int main() {
         // check if link worked
         int link_status = -1;
         glGetProgramiv(shader_program_id, GL_LINK_STATUS, &link_status);
+        log("program ", shader_program_id, " GL_LINK_STATUS = ", link_status);
         if (GL_TRUE != link_status) {
                 log_err("ERROR: could not link shader program (id: ", shader_program_id, ")");
                 log_program_logs(shader_program_id);
@@ -175,43 +198,30 @@ int main() {
 
         if (!is_valid(shader_program_id)) {
                 log_err("ERROR: program ", shader_program_id, " is not valid");
+                return false;
         }
-
-        // gets location of a uniform
-        // all uniforms are initialised to 0
-        // sometimes, this is okay, for other, maybe not
-        // also this is an expensive operation
-        GLint input_colour_loc = glGetUniformLocation(shader_program_id, "input_colour");
-        if (-1 == input_colour_loc) {
-                log_err("ERROR: could not find location of uniform 'input_colour'");
-                program_log_all(shader_program_id);
-        }
-
-        // avoid altering attributes during run-time, because it is super expensive apparently =O
-
-        program_log_all(shader_program_id);
 
         // main running loop
         while(!glfwWindowShouldClose(window)) {
                 update_fps_counter(window);
+                log("1");
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glViewport(0, 0, width, height);
-        
+                log("2");
                 glUseProgram(shader_program_id);
-
-                // expensive operation!!
-                glUniform4f(input_colour_loc, 1.f, 0.f, 0.f, 1.f);
-
+                log("3");
                 glBindVertexArray(VAO);
-
+                log("4");
                 // draw points 0-4 from currently bound VAO with currently in-use shader
-                glDrawArrays(GL_TRIANGLE_FAN, 0, vertices);
-
+                glDrawArrays(GL_TRIANGLES, 0, vertices);
+                log("5");
                 glfwSwapBuffers(window);
-                glfwPollEvents();
+                log("6");
 
-                if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_ESCAPE)) {
-                glfwSetWindowShouldClose(window, 1);
+                glfwPollEvents();
+                log("7");
+                if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+                        glfwSetWindowShouldClose(window, 1);
                 }
         }
 
