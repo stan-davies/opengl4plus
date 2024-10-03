@@ -1,11 +1,14 @@
 #version 410
 
-uniform float time;
+uniform sampler2D tex1;
+uniform sampler2D tex2;
 
 in vec3 colour;
+in vec2 tex_coord;
+
 out vec4 frag_colour;
 
 void main() {
-        vec3 mult = vec3(sin(-time), (sin(time)), time);
-        frag_colour = vec4(colour * mult, 1.0);
+        vec2 reversed_coord = vec2(1.0 - tex_coord.x, tex_coord.y);
+        frag_colour = mix(texture(tex1, tex_coord), texture(tex2, reversed_coord), 0.2);
 }
