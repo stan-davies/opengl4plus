@@ -72,7 +72,8 @@ bool log_err(Args... args) {
         file << std::endl;
 
         // directly output it too because it's an error and we want to know about it!
-        std::cerr << "ERROR: see logs for more information" << std::endl;
+        (std::cerr << ... << args);
+        std::cerr << std::endl;
 
         file.close();
         return true;
