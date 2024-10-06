@@ -139,8 +139,11 @@ int main() {
                 if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
                         glfwSetWindowShouldClose(window, 1);
                 } else if (glfwGetKey(window, GLFW_KEY_R)) {
-                        if (!load_program("shaders/default.vert", "shaders/default.frag", &program_id)) {
-                                log_err("ERROR: could not load program");
+                        bool register reloaded = hot_reload_comp("shaders/tracer.comp", &ray_program_id);
+                        if (!reloaded) {
+                                log_err("ERROR: could not reload program");
+                        } else {
+                                log("comp reloaded");
                         }
                 }
 

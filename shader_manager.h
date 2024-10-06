@@ -49,7 +49,7 @@ bool create_shader(GLenum type, const char *path, GLuint *shader_id) {
         int sh_cmp_stat = -1;
         glGetShaderiv(id, GL_COMPILE_STATUS, &sh_cmp_stat);
         if (GL_TRUE != sh_cmp_stat) {
-                log_err("ERROR: fragment shader (id: ", id, ") did not compile");
+                log_err("ERROR: shader at '", path, "' did not compile");
                 log_shader_logs(id);
                 return false;
         }
@@ -111,6 +111,24 @@ bool load_program(const char *vertex_path, const char *fragment_path, GLuint *_p
         GLuint program_id;
         if (!create_program(2, shaders, &program_id)) {
                 log_err("ERROR: shader program creation failed");
+                return false;
+        }
+
+        *_program_id = program_id;
+        return true;
+}
+
+bool hot_reload_comp(const char *compute_path, GLuint *_program_id) {
+        GLuint register c_id = 0;
+        if (!create_shader(GL_COMPUTE_SHADER, compute_path, &c_id)) {
+                log_err("ERROR: compute shader creation failed");
+                return false;
+        }
+
+        GLuint shaders[1] = { c_id };
+        GLuint register program_id = 0;
+        if (!create_program(1, shaders, &program_id)) {
+                log_err("ERROR: compute shader program creation failed");
                 return false;
         }
 
