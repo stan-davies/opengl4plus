@@ -1,0 +1,16 @@
+#version 460
+
+layout(local_size_x = 1, local_size_y = 1) in;
+layout(rgba32f, binding = 0) uniform image2D img_output;
+
+void main() {
+        // base colour
+        vec4 pixel = vec4(0.0, 0.0, 1.0, 1.0);
+        // position of pixel within work group, and by extension, the image
+        ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+
+        // ooo
+
+        // output pixel
+        imageStore(img_output, pixel_coords, pixel);
+}

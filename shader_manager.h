@@ -59,10 +59,11 @@ bool create_shader(GLenum type, const char *path, GLuint *shader_id) {
         return true;
 }
 
-bool create_program(GLuint vertex_id, GLuint fragment_id, GLuint *_program_id) {
+bool create_program(int shader_count, GLuint shaders[], GLuint *_program_id) {
         GLuint program_id = glCreateProgram();
-        glAttachShader(program_id, vertex_id);
-        glAttachShader(program_id, fragment_id);
+        for (int i = 0; i < shader_count; ++i) {
+                glAttachShader(program_id, shaders[i]);
+        }
         glLinkProgram(program_id);
 
         // check if link worked
@@ -103,8 +104,12 @@ bool load_program(const char *vertex_path, const char *fragment_path, GLuint *_p
                 return false;
         }
 
+        GLuint shaders[2];
+        shaders[0] = v_id;
+        shaders[1] = f_id;
+
         GLuint program_id;
-        if (!create_program(v_id, f_id, &program_id)) {
+        if (!create_program(2, shaders, &program_id)) {
                 log_err("ERROR: shader program creation failed");
                 return false;
         }
